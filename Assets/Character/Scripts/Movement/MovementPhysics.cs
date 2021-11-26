@@ -67,6 +67,11 @@ public class MovementPhysics : MonoBehaviour
     public float fallGravity;
     [SerializeField] float verSpeed => rb.velocity.y;
 
+    //ROTATE
+    Quaternion bodyRotation => bodyCol.transform.rotation;
+    Vector3 faceDir;
+    Quaternion faceRotation;
+
     private void Awake()
     {
         rb = transform.GetComponent<Rigidbody>();
@@ -91,6 +96,7 @@ public class MovementPhysics : MonoBehaviour
         PlaneMovement();
         AutoBrake();
 
+        RotateBody();
         BrickFall();
     }
 
@@ -161,36 +167,16 @@ public class MovementPhysics : MonoBehaviour
         }
     }
 
+    // SHOULD BE OPTIMIZED
     void AutoBrake()
     {
-        if (Mathf.Abs(planeVel.magnitude) > 0.2f)
-        {
-            if (mb.moveDirect.x == 0 || mb.moveDirect.x * planeVel.x < 0
-            || (planeVel.x > xSpeedLimit && physicsStat == PhysicalStatus.OnGround))
-            { rb.AddForce(new Vector3(-10 * planeVel.x, 0, 0)); Debug.Log("[AUTO BRAKE X ]"); }
-            if (mb.moveDirect.z == 0 || mb.moveDirect.z * planeVel.z < 0
-                || (planeVel.z > zSpeedLimit && physicsStat == PhysicalStatus.OnGround))
-            { rb.AddForce(new Vector3(0, 0, -10 * planeVel.z)); Debug.Log("[AUTO BRAKE Z ]");}
+        if (Mathf.Abs(planeVel.x) > 0.2f && (mb.moveDirect.x == 0 || mb.moveDirect.x * planeVel.x < 0 || (planeVel.x > xSpeedLimit && physicsStat == PhysicalStatus.OnGround)))
+        { rb.AddForce(new Vector3(-10 * planeVel.x, 0, 0)); }
 
-            
-        }
+        if (Mathf.Abs(planeVel.z) > 0.2f && (mb.moveDirect.z == 0 || mb.moveDirect.z * planeVel.z < 0 || (planeVel.z > zSpeedLimit && physicsStat == PhysicalStatus.OnGround)))
+        { rb.AddForce(new Vector3(0, 0, -10 * planeVel.z)); }
+
     }
-
-    //void AutoBrake()
-    //{
-    //    if (mb.moveDirect.x == 0 || mb.moveDirect.x * planeVel.x < 0
-    //        || (planeVel.x > xSpeedLimit && physicsStat == PhysicalStatus.OnGround)) { xBrakeCoeff = -10; }
-    //    else { xBrakeCoeff = 0; }
-    //    if (mb.moveDirect.z == 0 || mb.moveDirect.z * planeVel.z < 0
-    //        || (planeVel.z > zSpeedLimit && physicsStat == PhysicalStatus.OnGround)) { zBrakeCoeff = -10; }
-    //    else { zBrakeCoeff = 0; }
-
-    //    if (Mathf.Abs(planeVel.magnitude) > 0.2f)
-    //    {
-    //        rb.AddForce(new Vector3(xBrakeCoeff * planeVel.x, 0, zBrakeCoeff * planeVel.z));
-    //        Debug.Log("[AUTO BRAKE]");
-    //    }
-    //}
 
     void Jump()
     {
@@ -205,6 +191,18 @@ public class MovementPhysics : MonoBehaviour
         if(physicsStat == PhysicalStatus.OnAir) {
             if (mb.jumpInp == -1 || phySubStat != PhysicalSubStatus.AirUp ) { rb.AddForce(new Vector3(0, Physics.gravity.y, 0) * fallGravity * rb.mass); }
         }
+    }
+
+    void RotateBody()
+    {
+        if(mb.moveDirect.magnitude != 0)
+        {
+            faceDir = mb.moveDirect;
+            faceRotation = Quaternion.LookRotation(faceDir);
+            bodyCol.transform.rotation = Quaternion.Slerp(bodyRotation, faceRotation, 0.3f);
+        }
+
+        
     }
 
 }
