@@ -5,7 +5,6 @@ using UnityEngine;
 enum PhysicalStatus{
     OnGround = 1,
     OnAir = 2,
-    OnWall = 3,
 }
 
 enum PhysicalSubStatus
@@ -78,8 +77,8 @@ public class MovementPhysics : MonoBehaviour
         mb = transform.GetComponent<MovementBasics>();
         bodyCol = transform.Find("Body").GetComponent<CapsuleCollider>();
 
-        groundCheckOffset = new Vector3(0, -bodyCol.height / 2, 0);
-        groundCheckRad = bodyCol.radius + 0.15f;
+        groundCheckOffset = new Vector3(0, -bodyCol.height / 2 + 0.1f, 0);
+        groundCheckRad = bodyCol.radius;
 
         jumpSpeed = Mathf.Sqrt(2 * -Physics.gravity.y * jumpHeight);
     }
@@ -199,7 +198,7 @@ public class MovementPhysics : MonoBehaviour
         {
             faceDir = mb.moveDirect;
             faceRotation = Quaternion.LookRotation(faceDir);
-            bodyCol.transform.rotation = Quaternion.Slerp(bodyRotation, faceRotation, 0.3f);
+            bodyCol.transform.rotation = Quaternion.Slerp(bodyRotation, faceRotation, 0.2f);
         }
 
         
