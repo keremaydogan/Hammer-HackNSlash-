@@ -3,16 +3,24 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-
 public class Character : MonoBehaviour
 {
 
-    int health;
+    MovementPhysics mp;
+    CombatModule cm;
 
-    PhysicalStatus phyStat;
-    PhysicalSubStatus phySubStat;
+    public int health;
 
+    CharacterInfo charInfo;
+    public PhysicalStatus phyStat => mp.physicsStat;
+    public PhysicalSubStatus phySubStat => mp.phySubStat;
+    public CombatStatus combatStat => cm.comStat;
+    public Vector3 pos => transform.position;
 
-
+    private void Awake()
+    {
+        mp = gameObject.GetComponent<MovementPhysics>();
+        cm = gameObject.GetComponent<CombatModule>();
+    }
 
 }

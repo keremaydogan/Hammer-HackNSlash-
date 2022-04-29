@@ -2,12 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-enum PhysicalStatus{
+public enum PhysicalStatus{
     OnGround = 1,
     OnAir = 2,
 }
 
-enum PhysicalSubStatus
+public enum PhysicalSubStatus
 {
     GrIdle = 11,
     GrWalk = 12,
@@ -30,10 +30,10 @@ public class MovementPhysics : MonoBehaviour
 
     // PHYSICAL STATUS
     [Header("Physical Status")]
-    [SerializeField] PhysicalStatus physicsStat = PhysicalStatus.OnAir;
+    public PhysicalStatus physicsStat = PhysicalStatus.OnAir;
     PhysicalStatus phyStatPrev = PhysicalStatus.OnAir;
 
-    [SerializeField] PhysicalSubStatus phySubStat = PhysicalSubStatus.AirTop;
+    public PhysicalSubStatus phySubStat = PhysicalSubStatus.AirTop;
 
     [SerializeField] LayerMask groundLayer;
     bool onGround = false;
@@ -66,6 +66,12 @@ public class MovementPhysics : MonoBehaviour
     public float fallGravity;
     [SerializeField] float verSpeed => rb.velocity.y;
 
+    [Header("Detection")]
+    //Detection
+    [SerializeField] float detectionDist;
+    [SerializeField] float seeDist;
+    public float seeDistance => seeDist;
+
     //ROTATE
     Quaternion bodyRotation => bodyCol.transform.rotation;
     Vector3 faceDir;
@@ -97,6 +103,18 @@ public class MovementPhysics : MonoBehaviour
 
         RotateBody();
         BrickFall();
+
+        
+    }
+
+
+    // ADD TARGET
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.tag == mb.enemy )
+        {
+            mb.AddTarget(other.GetComponentInParent<Character>());
+        }
     }
 
     void PhysicalStatusUpdate()
@@ -130,7 +148,7 @@ public class MovementPhysics : MonoBehaviour
 
         // STATUS IS CHANGED CHECK
         PhyStatChangeDetector();
-        
+
     }
 
     void PhyStatChangeDetector()
@@ -155,13 +173,13 @@ public class MovementPhysics : MonoBehaviour
             xSpeedLimit = planeSpeedLimit * Mathf.Abs(mb.moveDirect.x);
             xMoveForce = planeMoveForceCoeff * (xSpeedLimit - Mathf.Abs(planeVel.x));
             if (Mathf.Abs(planeVel.x) < xSpeedLimit) {
-                rb.AddForce(Vector3.right * mb.moveDirect.x * xMoveForce);
+                rb.AddForce(Vector3.right * rb.mass * mb.moveDirect.x * xMoveForce);
             }
 
             zSpeedLimit = planeSpeedLimit * Mathf.Abs(mb.moveDirect.z);
             zMoveForce = planeMoveForceCoeff * (zSpeedLimit - Mathf.Abs(planeVel.z));
             if (Mathf.Abs(planeVel.z) < zSpeedLimit) {
-                rb.AddForce(Vector3.forward * mb.moveDirect.z * zMoveForce);
+                rb.AddForce(Vector3.forward * rb.mass * mb.moveDirect.z * zMoveForce);
             }
         }
     }
@@ -170,10 +188,10 @@ public class MovementPhysics : MonoBehaviour
     void AutoBrake()
     {
         if (Mathf.Abs(planeVel.x) > 0.2f && (mb.moveDirect.x == 0 || mb.moveDirect.x * planeVel.x < 0 || (planeVel.x > xSpeedLimit && physicsStat == PhysicalStatus.OnGround)))
-        { rb.AddForce(new Vector3(-10 * planeVel.x, 0, 0)); }
+        { rb.AddForce(new Vector3(-10 * rb.mass * planeVel.x, 0, 0)); }
 
         if (Mathf.Abs(planeVel.z) > 0.2f && (mb.moveDirect.z == 0 || mb.moveDirect.z * planeVel.z < 0 || (planeVel.z > zSpeedLimit && physicsStat == PhysicalStatus.OnGround)))
-        { rb.AddForce(new Vector3(0, 0, -10 * planeVel.z)); }
+        { rb.AddForce(new Vector3(0, 0, -10 * rb.mass * planeVel.z)); }
 
     }
 
@@ -194,14 +212,14 @@ public class MovementPhysics : MonoBehaviour
 
     void RotateBody()
     {
+
         if(mb.moveDirect.magnitude != 0)
         {
             faceDir = mb.moveDirect;
-            faceRotation = Quaternion.LookRotation(faceDir);
-            bodyCol.transform.rotation = Quaternion.Slerp(bodyRotation, faceRotation, 0.2f);
         }
+        faceRotation = Quaternion.LookRotation(faceDir);
+        bodyCol.transform.rotation = Quaternion.Slerp(bodyRotation, faceRotation, 0.2f);
 
-        
     }
 
 }

@@ -8,7 +8,17 @@ public class VirtualIntelligence : Intelligence
     Vector3 destination;
 
 
-    public override void InputReciever()
+    public override void Awake()
+    {
+        
+    }
+
+    public override void Update()
+    {
+
+    }
+
+    public override void FixedUpdate()
     {
 
     }

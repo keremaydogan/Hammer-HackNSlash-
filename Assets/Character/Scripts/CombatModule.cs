@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-enum CombatStatus
+public enum CombatStatus
 {
     Still = 1,
     Alert = 2,
@@ -12,6 +12,7 @@ enum CombatStatus
 public class CombatModule : MonoBehaviour
 {
 
-    CombatStatus comStat;
+    CombatStatus combatStat;
+    public CombatStatus comStat => combatStat;
 
 }
