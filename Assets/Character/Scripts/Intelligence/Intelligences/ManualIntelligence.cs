@@ -27,12 +27,14 @@ public class ManualIntelligence : Intelligence
     public override void Awake()
     {
         SetKeys();
+
     }
 
     public override void Update()
     {
         InputReciever();
         StatesUpdate();
+
     }
 
     public override void FixedUpdate()
@@ -47,7 +49,7 @@ public class ManualIntelligence : Intelligence
         controlKeys.left = KeyCode.A;
         controlKeys.run = KeyCode.LeftShift;
         controlKeys.restart = KeyCode.R;
-        controlKeys.jump = KeyCode.Keypad6;
+        controlKeys.jump = KeyCode.L;
     }
 
     void InputReciever() // Keyboard
@@ -66,7 +68,7 @@ public class ManualIntelligence : Intelligence
     // IT'S STATIC. NEEDS TO BE DYNAMIC.
     void StatesUpdate() 
     {
-        moveDir = Quaternion.Euler(0, 45, 0)*new Vector3(inputs.xInput, 0, inputs.zInput).normalized;
+        moveDir = Quaternion.Euler(0, 45, 0)*new Vector3(inputs.xInput, 0, inputs.zInput);
         
         
     }

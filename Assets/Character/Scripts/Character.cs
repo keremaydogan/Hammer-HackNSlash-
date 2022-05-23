@@ -12,7 +12,7 @@ public class Character : MonoBehaviour
     public int health;
 
     CharacterInfo charInfo;
-    public PhysicalStatus phyStat => mp.physicsStat;
+    public PhysicalStatus phyStat => mp.phyStat;
     public PhysicalSubStatus phySubStat => mp.phySubStat;
     public CombatStatus combatStat => cm.comStat;
     public Vector3 pos => transform.position;
