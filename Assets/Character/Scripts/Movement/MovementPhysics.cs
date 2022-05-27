@@ -55,13 +55,11 @@ public class MovementPhysics : MonoBehaviour
     [SerializeField] float runConst;
     float moveCoeff;
 
-    Vector3 xzVelocity; 
+    Vector3 xzVelocity;
+    float moveDirectY;
 
     [SerializeField] Vector3 brakeDir;
-
-    RaycastHit groundHit;
-    Vector3 groundNormal;
-    float moveDirectY;
+    Vector3 moveDirDifference;
 
     //JUMP
     [Header("Jump")]
@@ -70,22 +68,27 @@ public class MovementPhysics : MonoBehaviour
     public float fallGravity;
     [SerializeField] float verSpeed => rb.velocity.y;
 
-    [Header("Detection")]
-    //Detection
-    [SerializeField] float detectionDist;
-    [SerializeField] float seeDist;
-    public float detectionDistance => detectionDist;
-    public float seeDistance => seeDist;
+    [Header("EnemyDetection")]
+    //ENEMY DETECTION
+    [SerializeField] float enemydetectDist;
+    [SerializeField] float enemySeeDist;
+    public float enemydetectDistance => enemydetectDist;
+    public float enemySeeDistance => enemySeeDist;
 
     //ROTATE
     Quaternion bodyRotation => bodyCol.transform.rotation;
     Vector3 faceDir;
     Quaternion faceRotation;
 
-    //GRAVITY (DEL)
+    //GROUND NORMAL
+    RaycastHit groundHit;
+    Vector3 groundNormal;
+    Vector3 groundNormalPrev;
+    bool groundNormalChanged;
+
+    //GRAVITY
     float gravMag;
-    
-    [SerializeField] Vector3 gravDirect;
+    Vector3 gravDirect;
 
     private void Awake()
     {
@@ -94,14 +97,15 @@ public class MovementPhysics : MonoBehaviour
         bodyCol = transform.Find("Body").GetComponent<CapsuleCollider>();
         detectionCol = transform.Find("DetectionCol").GetComponent<SphereCollider>();
 
-        groundCheckOffset = new Vector3(0, -bodyCol.height / 2 + 0.1f, 0);
+        groundCheckOffset = new Vector3(0, -bodyCol.height / 2 + 0.02f, 0);
         groundCheckRad = bodyCol.radius;
 
         jumpSpeed = Mathf.Sqrt(2 * -Physics.gravity.y * jumpHeight);
 
-        detectionCol.radius = detectionDist;
+        detectionCol.radius = enemydetectDist;
 
         gravMag = Physics.gravity.magnitude;
+        
     }
 
     private void Update()
@@ -113,6 +117,7 @@ public class MovementPhysics : MonoBehaviour
     {
         PhysicalStatusUpdate();
 
+        DetectGroundNormal();
         SetMoveDirect();
         PlaneMovement();
         AutoBrake();
@@ -120,10 +125,9 @@ public class MovementPhysics : MonoBehaviour
         RotateBody();
         BrickFall();
 
-        //GravityDirectSetter();
+        GravityDirectSetter();
 
     }
-
 
     // ADD TARGET
     private void OnTriggerEnter(Collider other)
@@ -134,28 +138,20 @@ public class MovementPhysics : MonoBehaviour
         }
     }
 
-
-    //CHECK
-
-    //TO PREVENT SLIDING ON SLOPE (OR HAVING SNAP TO GROUND EFFECT)
-
-    //void GravityDirectSetter()
-    //{
-
-    //    if (phyStat.Equals(PhysicalStatus.OnGround)) {
-    //        gravDirect = gravMag * -1 * groundNormal.normalized;
-    //    }
-    //    else {
-    //        gravDirect = gravMag * Vector3.down;
-    //    }
-
-    //    if(Physics.gravity != gravDirect)
-    //    {
-    //        Physics.gravity = gravDirect;
-    //    }
-
-    //}
-
+    void GravityDirectSetter()
+    {
+        if (phyStatChanged)
+        {
+            if (phyStat.Equals(PhysicalStatus.OnGround))
+            {
+                rb.useGravity = false;
+            }
+            else
+            {
+                rb.useGravity = true;
+            }
+        }
+    }
 
     void PhysicalStatusUpdate()
     {
@@ -182,8 +178,7 @@ public class MovementPhysics : MonoBehaviour
             else { phySubStat = PhysicalSubStatus.AirTop; }
         }
 
-        // STATUS IS CHANGED CHECK
-        PhyStatChangeDetector();
+        //PhyStatChangeDetector();
 
     }
 
@@ -195,15 +190,37 @@ public class MovementPhysics : MonoBehaviour
 
     void SetMoveDirect()
     {
-        if (mb.moveDirect.magnitude == 0) {
-            moveDir = Vector3.zero;
-        }
-        else {
+        //if (mb.moveDirect.magnitude == 0) {
+        //    moveDir = Vector3.zero;
+        //}
+        //else {
+        //    moveDirectY = (Quaternion.AngleAxis(90, bodyCol.transform.right) * groundNormal).y;
+        //    moveDir = (mb.moveDirect + (moveDirectY * Vector3.up)).normalized;
+        //}
+        moveDirectY = (Quaternion.AngleAxis(90, bodyCol.transform.right) * groundNormal).y;
+        moveDir = (mb.moveDirect + (moveDirectY * Vector3.up)).normalized;
+    }
+
+    void DetectGroundNormal()
+    {
+        if (phyStat.Equals(PhysicalStatus.OnGround))
+        {
             Physics.Raycast(selfPos + groundCheckOffset, Vector3.down, out groundHit, groundCheckRad, groundLayer);
             groundNormal = groundHit.normal;
-            moveDirectY = (Quaternion.AngleAxis(90, bodyCol.transform.right) * groundNormal).y;
-            moveDir = (mb.moveDirect + (moveDirectY * Vector3.up)).normalized;
         }
+        else if(phyStatChanged && phyStat.Equals(PhysicalStatus.OnAir))
+        {
+            groundNormal = Vector3.up;
+        }
+
+        //GroundNormalChangeDetector();
+        
+    }
+
+    void GroundNormalChangeDetector()
+    {
+        groundNormalChanged = (groundNormal != groundNormalPrev) ? true : false;
+        groundNormalPrev = groundNormal;
     }
 
     void PlaneMovement()
@@ -232,25 +249,29 @@ public class MovementPhysics : MonoBehaviour
 
         if (phyStat.Equals(PhysicalStatus.OnGround))
         {
+            moveDirDifference = (rb.velocity.normalized - moveDir);
+
             if (moveDir.magnitude == 0)
             {
                 brakeDir = -1 * rb.velocity.normalized;
             }
             else
             {
-                brakeDir = -1 * (rb.velocity.normalized - moveDir).normalized;
+                brakeDir = -1 * moveDirDifference.normalized;
             }
 
-            if (Mathf.Abs((rb.velocity.normalized - moveDir).magnitude) > 0.2f)
+            if (Mathf.Abs(moveDirDifference.magnitude) > 0.2f)
             {
                 rb.AddForce(brakeDir * rb.mass * 40);
             }
         }
         else if (phyStat.Equals(PhysicalStatus.OnAir))
         {
-            if (Mathf.Abs((xzVelocity.normalized - mb.moveDirect).magnitude) > 0.2f)
+            moveDirDifference = (xzVelocity.normalized - mb.moveDirect);
+
+            if (Mathf.Abs(moveDirDifference.magnitude) > 0.2f)
             {
-                brakeDir = -1 * (xzVelocity.normalized - mb.moveDirect).normalized;
+                brakeDir = -1 * moveDirDifference.normalized;
                 rb.AddForce(brakeDir * rb.mass * 20);
             }
         }
@@ -270,8 +291,6 @@ public class MovementPhysics : MonoBehaviour
             && (mb.jumpInp == -1 || phySubStat != PhysicalSubStatus.AirUp)){
             rb.AddForce(new Vector3(0, Physics.gravity.y, 0) * fallGravity * rb.mass);
         }
-
-
     }
 
     void RotateBody()
@@ -290,8 +309,6 @@ public class MovementPhysics : MonoBehaviour
 
     }
 
-       
-
     private void OnDrawGizmos()
     {
         //Gizmos.color = Color.blue;
@@ -301,6 +318,9 @@ public class MovementPhysics : MonoBehaviour
 
         //Gizmos.color = Color.blue;
         //Gizmos.DrawLine(transform.position, transform.position + brakeDir * 3);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(transform.position, transform.position + moveDir * 4);
 
     }
 

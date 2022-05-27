@@ -103,7 +103,7 @@ public class MovementBasics : MonoBehaviour
         if(intl.targets.Count > 0) {
             distantChars.Clear();
             foreach (Character target in intl.targets) {
-                if (Mathf.Abs((target.pos - pos).magnitude) > mp.seeDistance) {
+                if (Mathf.Abs((target.pos - pos).magnitude) > mp.enemySeeDistance) {
                     distantChars.Add(target);
                 }
             }
